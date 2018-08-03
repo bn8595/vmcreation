@@ -1,0 +1,67 @@
+---
+- hosts: localhost
+  gather_facts: false
+  connection: local
+ 
+  vars_prompt:
+
+  - name: "vsphere_user_name"
+    prompt: "Your Domain UserName"
+    private: no
+
+  - name: "vsphere_password"
+    prompt: "Your Domain Password" 
+    private: yes
+
+  - name: "vm_name"
+    prompt: "Provide VMs Hostname"
+    private: no
+
+  - name: "template_name"
+    prompt: "Provide Template Name [Ubuntu16.04_v13 / Windows_2012R2_STD_Januari_2018]"
+#    default: Ubuntu16.04_v13
+    private: no
+
+  - name: "ip_address"
+    prompt: "Provide Ip Address for VM"
+    private: no
+
+  - name: "notes"
+    prompt: "VM Notes"
+    private: no
+    default: "Deployed Using Ansible"
+   
+  tasks:
+  - name: Create a VM From a Template
+    vmware_guest:
+      hostname: swvcenter03.fd.nl
+      username: '{{ vsphere_user_name }}'
+      password: '{{ vsphere_password }}'
+      validate_certs: false
+      name: '{{ vm_name }}'
+      state: poweredon
+      template: '{{ template_name }}'
+      datacenter: FD Mediagroep
+      folder: Linux
+      esxi_hostname: esx03.fd.nl
+#      hardware:
+#        memory_mb: 1024
+#        num_cpus: 1
+#        scsi: lsilogic
+      customization:
+        autologon: yes
+        dns_servers:
+        - 172.18.0.21
+        - 172.18.0.23
+        domain: fd.nl
+        password: '{{ vsphere_password }}'
+      networks:
+      - name: Production
+        ip: '{{ ip_address }}'
+        netmask: 255.255.254.0
+        gateway: 172.18.0.1
+#        vlan: 10
+        type: static
+      wait_for_ip_address: yes
+    delegate_to: localhost
+    register: deploy
